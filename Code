@@ -1,0 +1,193 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+int trigPin = 11;
+int echoPin = 10;
+long duration,distance;
+
+const int MOTOR_A1 = 5;
+const int MOTOR_A2 = 4;
+const int ENA      = 3;
+const int MOTOR_B1 = 7;
+const int MOTOR_B2 = 6;
+const int ENB      = 9;
+
+int sensor[6];
+
+void setup() {
+  Serial.begin(9600);
+
+  lcd.init();
+  lcd.backlight();
+
+  pinMode(trigPin,OUTPUT);
+  pinMode(echoPin,INPUT);
+  
+  pinMode(MOTOR_A1, OUTPUT);
+  pinMode(MOTOR_A2, OUTPUT);
+  pinMode(MOTOR_B1, OUTPUT);
+  pinMode(MOTOR_B2, OUTPUT);
+
+}
+
+void loop() {
+
+                                  ///////// SOnar Code ////////////
+  digitalWrite(trigPin,LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin,HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin,LOW);
+  
+  duration = pulseIn(echoPin,HIGH);
+  distance = duration * 0.034/2;
+  delay(10);
+
+  lcd.setCursor(0,0);
+  lcd.print("Distance: ");
+  lcd.print(distance);
+  delay (100);
+  lcd.clear();
+
+                  ///////LFR Code///////
+  sensor_read();
+  sensor_print();
+  
+ if (distance <= 15) {
+ Stop();
+ delay(100);
+ turnRight();
+ delay(700);
+ moveForward();
+ delay(800);
+ turnLeft();
+ delay(700);
+ moveForward();
+ delay(800);
+ Stop();
+ 
+    }
+
+
+  
+ 
+if(distance>=16) {
+
+    if (sensor[0] == 0 && sensor[1] == 0 && sensor[2] == 1 && sensor[3] == 1 && sensor[4] == 0 && sensor[5] == 0) {
+    moveForward();    //Normal
+  }
+    if (sensor[0] == 1 && sensor[1] == 1 && sensor[2] == 0 && sensor[3] == 0 && sensor[4] == 0 && sensor[5] == 0)
+  {
+    turnRight();      //Speed Up
+  }
+    if (sensor[0] == 0 && sensor[1] == 0 && sensor[2] == 0 && sensor[3] == 0 && sensor[4] == 1 && sensor[5] == 1)
+  {
+    turnLeft();       // Speed Up
+  }
+   if (sensor[0] == 1 && sensor[1] == 1 && sensor[2] == 1 && sensor[3] == 0 && sensor[4] == 0 && sensor[5] == 0)
+  {
+    turnRight();      // Miss Align
+  }
+    if (sensor[0] == 0 && sensor[1] == 0 && sensor[2] == 0 && sensor[3] == 1 && sensor[4] == 1 && sensor[5] == 1)
+  {
+    turnLeft();       // Miss Align
+  }
+  if (sensor[0] == 1 && sensor[1] == 1 && sensor[2] == 1 && sensor[3] == 1 && sensor[4] == 0 && sensor[5] == 0)
+  {
+    turnRight();      // Turn with right 4
+  }
+  if (sensor[0] == 0 && sensor[1] == 0 && sensor[2] == 1 && sensor[3] == 1 && sensor[4] == 1 && sensor[5] == 1)
+  {
+    turnLeft();       // Turn with left 3
+  }
+    if (sensor[0] == 1 && sensor[1] == 0 && sensor[2] == 0 && sensor[3] == 0 && sensor[4] == 0 && sensor[5] == 0)
+  {
+    turnRight();      //Max
+  }
+  if (sensor[0] == 0 && sensor[1] == 0 && sensor[2] == 0 && sensor[3] == 0 && sensor[4] == 0 && sensor[5] == 1)
+  {
+    turnLeft();      //Max
+  }
+  if (sensor[0] == 0 && sensor[1] == 0 && sensor[2] == 0 && sensor[3] == 0 && sensor[4] == 0 && sensor[5] == 0)
+  {
+    Stop();           //Stop
+  }
+  if (sensor[0] == 1 && sensor[1] == 1 && sensor[2] == 1 && sensor[3] == 1 && sensor[4] == 1 && sensor[5] == 1)
+  {
+    Stop();           //STop
+  }
+    if (sensor[0] == 0 && sensor[1] == 0 && sensor[2] == 0 && sensor[3] == 1 && sensor[4] == 1 && sensor[5] == 0)
+  {
+    turnLeft();      // Miss Align
+  }
+      if (sensor[0] == 0 && sensor[1] == 1 && sensor[2] == 1 && sensor[3] == 0 && sensor[4] == 0 && sensor[5] == 0)
+  {
+    turnRight();     // Miss Align
+  }
+ }
+}
+
+
+
+
+
+void sensor_read() {
+  for (int i = 0; i < 6; i++)
+  {
+    sensor[i] = analogRead(i) > 300;
+  }
+}
+
+void sensor_print()
+{
+  for (int i = 0; i < 6; i++)
+  {
+    sensor[i] = analogRead(i) > 300;
+    Serial.print(sensor[i]);
+    Serial.print('\t');
+  }
+  Serial.println();
+}
+    
+void turnRight() {
+  analogWrite(ENA, 0);
+  analogWrite(ENB, 50);
+  digitalWrite(MOTOR_A1, LOW);
+  digitalWrite(MOTOR_A2, HIGH);
+  digitalWrite(MOTOR_B1, HIGH);
+  digitalWrite(MOTOR_B2, LOW);
+  lcd.setCursor(0,1);  
+  lcd.print("Left:50 RPM");
+}
+void Stop() {
+  analogWrite(ENA, 0);
+  analogWrite(ENB, 0);
+  digitalWrite(MOTOR_A1, LOW);
+  digitalWrite(MOTOR_A2, LOW);
+  digitalWrite(MOTOR_B1, LOW);
+  digitalWrite(MOTOR_B2, LOW);
+    lcd.setCursor(0,1);  
+  lcd.print("Stop:0 RPM");
+
+}
+void turnLeft() {
+  analogWrite(ENA, 50);
+  analogWrite(ENB, 0);
+  digitalWrite(MOTOR_A1, LOW);
+  digitalWrite(MOTOR_A2, HIGH);
+  digitalWrite(MOTOR_B1, HIGH);
+  digitalWrite(MOTOR_B2, LOW);
+
+   lcd.setCursor(0,1);  
+  lcd.print("Right:50");
+}
+void moveForward() {
+  analogWrite(ENA, 50);
+  analogWrite(ENB, 50);
+  digitalWrite(MOTOR_A1, LOW);
+  digitalWrite(MOTOR_A2, HIGH);
+  digitalWrite(MOTOR_B1, HIGH);
+  digitalWrite(MOTOR_B2, LOW);
+  lcd.setCursor(0,1);  
+  lcd.print("Speed:50");
+}
